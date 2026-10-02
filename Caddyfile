@@ -1,0 +1,43 @@
+{
+	# The platform edge already terminates TLS, so Caddy must not try to.
+	auto_https off
+	admin off
+}
+
+:{$PORT} {
+	log {
+		output stdout
+		format console
+	}
+
+	# ---- xray: VLESS over WebSocket --------------------------------------
+	# flush_interval -1 = disable response buffering, mandatory for streaming.
+	@vless path /vless /vless/*
+	handle @vless {
+		reverse_proxy 127.0.0.1:10000 {
+			flush_interval -1
+			transport http {
+				dial_timeout 10s
+			}
+		}
+	}
+
+	# ---- JupyterLab: the owner's terminal ---------------------------------
+	# Jupyter's base_url is set to /j/, so the prefix must be passed through
+	# untouched (no rewrite) for its websocket/static assets to resolve.
+	handle /j/* {
+		reverse_proxy 127.0.0.1:8888 {
+			flush_interval -1
+		}
+	}
+
+	# ---- health check ----------------------------------------------------
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# ---- everything else --------------------------------------------------
+	handle {
+		redir / /j/ 302
+	}
+}
