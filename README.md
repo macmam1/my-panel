@@ -1,4 +1,4 @@
-# vpn-panel
+# my-panel
 
 Container image for free PaaS platforms that only offer **"deploy from GitHub"**
 and no terminal. It runs three things behind the single public HTTPS port that
